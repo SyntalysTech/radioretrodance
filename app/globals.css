@@ -19,7 +19,7 @@
 
 html, body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 body {
@@ -292,6 +292,84 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(233, 30, 140, 0.1);
   color: white;
   box-shadow: 0 0 20px rgba(233, 30, 140, 0.2);
+}
+
+.action-btn-primary {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.22), rgba(233, 30, 140, 0.28));
+  border-color: rgba(0, 212, 255, 0.5);
+  color: white;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.action-btn-primary:hover {
+  border-color: rgba(0, 212, 255, 0.8);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.35), rgba(233, 30, 140, 0.35));
+  box-shadow: 0 0 26px rgba(0, 212, 255, 0.3);
+}
+
+.action-btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.install-card {
+  width: 100%;
+  max-width: 24rem;
+  background: rgba(10, 10, 15, 0.5);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22);
+}
+
+.install-card--android {
+  border-color: rgba(0, 212, 255, 0.25);
+}
+
+.install-card--ios {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.install-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.52);
+  margin-bottom: 0.45rem;
+}
+
+.install-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  color: white;
+  margin-bottom: 0.55rem;
+}
+
+.install-copy {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.install-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.install-step {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.76rem;
 }
 
 /* Focus styles */

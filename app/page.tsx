@@ -1,9 +1,47 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 
 const STREAM_URL = 'https://panel.radioretrodance.com/listen/radio_retro_dance/radio.mp3'
+
+type InstallPlatform = 'android' | 'ios' | 'other' | null
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed'
+    platform: string
+  }>
+}
+
+function getInstallContext(): {
+  installPlatform: Exclude<InstallPlatform, null>
+  isSafariOnIos: boolean
+  isStandalone: boolean
+} {
+  const navigatorWithStandalone = window.navigator as Navigator & {
+    standalone?: boolean
+    maxTouchPoints?: number
+  }
+  const userAgent = navigatorWithStandalone.userAgent.toLowerCase()
+  const isAndroid = /android/.test(userAgent)
+  const isIOS =
+    /iphone|ipad|ipod/.test(userAgent) ||
+    (navigatorWithStandalone.platform === 'MacIntel' &&
+      (navigatorWithStandalone.maxTouchPoints ?? 0) > 1)
+  const isSafariOnIos =
+    isIOS && /safari/.test(userAgent) && !/crios|fxios|edgios/.test(userAgent)
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    navigatorWithStandalone.standalone === true
+
+  return {
+    installPlatform: isAndroid ? 'android' : isIOS ? 'ios' : 'other',
+    isSafariOnIos,
+    isStandalone,
+  }
+}
 
 export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -11,19 +49,68 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [canInstall, setCanInstall] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [installPlatform, setInstallPlatform] = useState<InstallPlatform>(null)
+  const [isSafariOnIos, setIsSafariOnIos] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousVolume = useRef(0.8)
 
-  // PWA install prompt
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
+    const mediaQuery = window.matchMedia('(display-mode: standalone)')
+
+    const updateInstallContext = () => {
+      const nextContext = getInstallContext()
+      setInstallPlatform(nextContext.installPlatform)
+      setIsSafariOnIos(nextContext.isSafariOnIos)
+      setIsStandalone(nextContext.isStandalone)
+
+      if (nextContext.isStandalone) {
+        setCanInstall(false)
+        setDeferredPrompt(null)
+      }
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      const installEvent = event as BeforeInstallPromptEvent
+      event.preventDefault()
+      setDeferredPrompt(installEvent)
       setCanInstall(true)
     }
+
+    const handleAppInstalled = () => {
+      setCanInstall(false)
+      setDeferredPrompt(null)
+      updateInstallContext()
+    }
+
+    updateInstallContext()
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((error) => {
+        console.error('Error registering service worker:', error)
+      })
+    }
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateInstallContext)
+    } else {
+      mediaQuery.addListener(updateInstallContext)
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
+
+      if (typeof mediaQuery.removeEventListener === 'function') {
+        mediaQuery.removeEventListener('change', updateInstallContext)
+      } else {
+        mediaQuery.removeListener(updateInstallContext)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -104,29 +191,34 @@ export default function Home() {
     if (navigator.share) {
       try { await navigator.share(shareData) } catch {}
     } else {
-      navigator.clipboard.writeText('https://radioretrodance.com')
+      navigator.clipboard.writeText('https://radioretrodance.com').catch(() => {})
     }
   }
 
   const handleInstall = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') {
-        setCanInstall(false)
-      }
-      setDeferredPrompt(null)
+    if (!deferredPrompt) return
+
+    await deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setCanInstall(false)
     }
+    setDeferredPrompt(null)
   }
 
+  const showAndroidInstallCard = installPlatform === 'android' && !isStandalone
+  const showIosInstallCard = installPlatform === 'ios' && !isStandalone
+  const showGenericInstallButton =
+    installPlatform === 'other' && canInstall && !isStandalone
+
   return (
-    <main className="h-screen w-screen relative overflow-hidden">
+    <main className="min-h-screen w-screen relative overflow-x-hidden">
       {/* Background layers */}
       <div className="retro-bg" />
       <div className="stars" />
 
       {/* Content */}
-      <div className="scanlines relative z-10 h-full flex flex-col items-center justify-center px-4">
+      <div className="scanlines relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:py-8">
 
         {/* Logo */}
         <div className="float mb-4">
@@ -220,6 +312,50 @@ export default function Home() {
           </div>
         </div>
 
+        {showAndroidInstallCard && (
+          <section className="install-card install-card--android mb-6" aria-label="Instalar webapp en Android">
+            <p className="install-label">Android WebApp</p>
+            <h2 className="install-title">Instala la radio como app</h2>
+            <p className="install-copy">
+              {canInstall
+                ? 'Anadela a tu movil para abrirla como app y escucharla con un toque.'
+                : 'Si el navegador no muestra el boton automatico, abre el menu y pulsa "Instalar app" o "Anadir a pantalla de inicio".'}
+            </p>
+            {canInstall ? (
+              <button onClick={handleInstall} className="action-btn action-btn-primary action-btn-full">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Instalar en Android
+              </button>
+            ) : (
+              <div className="install-steps">
+                <span className="install-step">Menu del navegador</span>
+                <span className="install-step">Instalar app</span>
+              </div>
+            )}
+          </section>
+        )}
+
+        {showIosInstallCard && (
+          <section className="install-card install-card--ios mb-6" aria-label="Instalar webapp en iPhone">
+            <p className="install-label">iPhone</p>
+            <h2 className="install-title">Guardala en pantalla de inicio</h2>
+            <p className="install-copy">
+              {isSafariOnIos
+                ? 'En iPhone no existe instalacion directa como en Android, pero Safari si permite guardarla como app.'
+                : 'Para anadirla como app en iPhone, abre esta web en Safari y luego usa el menu de compartir.'}
+            </p>
+            <div className="install-steps">
+              {!isSafariOnIos && <span className="install-step">Abrir en Safari</span>}
+              <span className="install-step">Compartir</span>
+              <span className="install-step">Anadir a inicio</span>
+            </div>
+          </section>
+        )}
+
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           <button onClick={handleShare} className="action-btn">
@@ -232,7 +368,7 @@ export default function Home() {
             </svg>
             Compartir
           </button>
-          {canInstall && (
+          {showGenericInstallButton && (
             <button onClick={handleInstall} className="action-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -243,7 +379,7 @@ export default function Home() {
             </button>
           )}
           <button
-            onClick={() => window.open(STREAM_URL, '_blank')}
+            onClick={() => window.open(STREAM_URL, '_blank', 'noopener,noreferrer')}
             className="action-btn"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
