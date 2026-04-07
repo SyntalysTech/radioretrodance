@@ -53,6 +53,7 @@ export default function Home() {
   const [installPlatform, setInstallPlatform] = useState<InstallPlatform>(null)
   const [isSafariOnIos, setIsSafariOnIos] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [installDismissed, setInstallDismissed] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousVolume = useRef(0.8)
 
@@ -206,8 +207,8 @@ export default function Home() {
     setDeferredPrompt(null)
   }
 
-  const showAndroidInstallCard = installPlatform === 'android' && !isStandalone
-  const showIosInstallCard = installPlatform === 'ios' && !isStandalone
+  const showAndroidInstallCard = installPlatform === 'android' && !isStandalone && !installDismissed
+  const showIosInstallCard = installPlatform === 'ios' && !isStandalone && !installDismissed
   const showGenericInstallButton =
     installPlatform === 'other' && canInstall && !isStandalone
 
@@ -312,49 +313,6 @@ export default function Home() {
           </div>
         </div>
 
-        {showAndroidInstallCard && (
-          <section className="install-card install-card--android mb-6" aria-label="Instalar webapp en Android">
-            <p className="install-label">Android WebApp</p>
-            <h2 className="install-title">Instala la radio como app</h2>
-            <p className="install-copy">
-              {canInstall
-                ? 'Anadela a tu movil para abrirla como app y escucharla con un toque.'
-                : 'Si el navegador no muestra el boton automatico, abre el menu y pulsa "Instalar app" o "Anadir a pantalla de inicio".'}
-            </p>
-            {canInstall ? (
-              <button onClick={handleInstall} className="action-btn action-btn-primary action-btn-full">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Instalar en Android
-              </button>
-            ) : (
-              <div className="install-steps">
-                <span className="install-step">Menu del navegador</span>
-                <span className="install-step">Instalar app</span>
-              </div>
-            )}
-          </section>
-        )}
-
-        {showIosInstallCard && (
-          <section className="install-card install-card--ios mb-6" aria-label="Instalar webapp en iPhone">
-            <p className="install-label">iPhone</p>
-            <h2 className="install-title">Guardala en pantalla de inicio</h2>
-            <p className="install-copy">
-              {isSafariOnIos
-                ? 'En iPhone no existe instalacion directa como en Android, pero Safari si permite guardarla como app.'
-                : 'Para anadirla como app en iPhone, abre esta web en Safari y luego usa el menu de compartir.'}
-            </p>
-            <div className="install-steps">
-              {!isSafariOnIos && <span className="install-step">Abrir en Safari</span>}
-              <span className="install-step">Compartir</span>
-              <span className="install-step">Anadir a inicio</span>
-            </div>
-          </section>
-        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-center gap-3 mb-6">
@@ -396,6 +354,54 @@ export default function Home() {
           radioretrodance.com
         </p>
       </div>
+
+      {/* Install banner - fixed bottom */}
+      {showAndroidInstallCard && (
+        <div className="install-banner" aria-label="Instalar webapp en Android">
+          <div className="install-banner-content">
+            <div className="install-banner-text">
+              <strong>Instala la radio como app</strong>
+              {canInstall ? (
+                <span>Abrela con un toque desde tu movil</span>
+              ) : (
+                <span>Menu &rarr; Instalar app</span>
+              )}
+            </div>
+            {canInstall ? (
+              <button onClick={handleInstall} className="install-banner-btn">
+                Instalar
+              </button>
+            ) : null}
+          </div>
+          <button onClick={() => setInstallDismissed(true)} className="install-banner-close" aria-label="Cerrar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {showIosInstallCard && (
+        <div className="install-banner" aria-label="Instalar webapp en iPhone">
+          <div className="install-banner-content">
+            <div className="install-banner-text">
+              <strong>Anadela a tu inicio</strong>
+              <span>
+                {isSafariOnIos
+                  ? 'Compartir \u2192 Anadir a inicio'
+                  : 'Abre en Safari \u2192 Compartir \u2192 Anadir a inicio'}
+              </span>
+            </div>
+          </div>
+          <button onClick={() => setInstallDismissed(true)} className="install-banner-close" aria-label="Cerrar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
     </main>
   )
 }
