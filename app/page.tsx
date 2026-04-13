@@ -49,11 +49,12 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [canInstall, setCanInstall] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [installPlatform, setInstallPlatform] = useState<InstallPlatform>(null)
   const [isSafariOnIos, setIsSafariOnIos] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
   const [installDismissed, setInstallDismissed] = useState(false)
+  const [showBanner, setShowBanner] = useState(false)
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previousVolume = useRef(0.8)
 
@@ -68,20 +69,25 @@ export default function Home() {
 
       if (nextContext.isStandalone) {
         setCanInstall(false)
-        setDeferredPrompt(null)
+        deferredPromptRef.current = null
+      }
+
+      // Show banner after a short delay so it doesn't flash on load
+      if (!nextContext.isStandalone && (nextContext.installPlatform === 'android' || nextContext.installPlatform === 'ios')) {
+        setTimeout(() => setShowBanner(true), 1500)
       }
     }
 
     const handleBeforeInstallPrompt = (event: Event) => {
-      const installEvent = event as BeforeInstallPromptEvent
       event.preventDefault()
-      setDeferredPrompt(installEvent)
+      deferredPromptRef.current = event as BeforeInstallPromptEvent
       setCanInstall(true)
     }
 
     const handleAppInstalled = () => {
       setCanInstall(false)
-      setDeferredPrompt(null)
+      deferredPromptRef.current = null
+      setShowBanner(false)
       updateInstallContext()
     }
 
@@ -197,20 +203,23 @@ export default function Home() {
   }
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return
+    const prompt = deferredPromptRef.current
+    if (!prompt) return
 
-    await deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
+    prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    deferredPromptRef.current = null
+    setCanInstall(false)
     if (outcome === 'accepted') {
-      setCanInstall(false)
+      setShowBanner(false)
     }
-    setDeferredPrompt(null)
   }
 
-  const showAndroidInstallCard = installPlatform === 'android' && !isStandalone && !installDismissed
-  const showIosInstallCard = installPlatform === 'ios' && !isStandalone && !installDismissed
+  const showAndroidBanner = showBanner && installPlatform === 'android' && !isStandalone && !installDismissed
+  const showIosBanner = showBanner && installPlatform === 'ios' && !isStandalone && !installDismissed
   const showGenericInstallButton =
     installPlatform === 'other' && canInstall && !isStandalone
+  const hasBanner = showAndroidBanner || showIosBanner
 
   return (
     <main className="min-h-screen w-screen relative overflow-x-hidden">
@@ -219,7 +228,7 @@ export default function Home() {
       <div className="stars" />
 
       {/* Content */}
-      <div className="scanlines relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:py-8">
+      <div className={`scanlines relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:py-8 ${hasBanner ? 'pb-20' : ''}`}>
 
         {/* Logo */}
         <div className="float mb-4">
@@ -356,7 +365,7 @@ export default function Home() {
       </div>
 
       {/* Install banner - fixed bottom */}
-      {showAndroidInstallCard && (
+      {showAndroidBanner && (
         <div className="install-banner" aria-label="Instalar webapp en Android">
           <div className="install-banner-content">
             <div className="install-banner-text">
@@ -382,7 +391,7 @@ export default function Home() {
         </div>
       )}
 
-      {showIosInstallCard && (
+      {showIosBanner && (
         <div className="install-banner" aria-label="Instalar webapp en iPhone">
           <div className="install-banner-content">
             <div className="install-banner-text">

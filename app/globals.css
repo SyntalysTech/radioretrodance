@@ -324,10 +324,17 @@ input[type="range"]::-moz-range-thumb {
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  background: rgba(10, 10, 15, 0.92);
+  background: rgba(10, 10, 15, 0.95);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(233, 30, 140, 0.3);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  animation: banner-slide-up 0.4s ease-out;
+}
+
+@keyframes banner-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .install-banner-content {
