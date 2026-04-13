@@ -312,95 +312,40 @@ input[type="range"]::-moz-range-thumb {
   justify-content: center;
 }
 
-/* Install banner - fixed bottom */
-.install-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  background: rgba(10, 10, 15, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(233, 30, 140, 0.3);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
-  animation: banner-slide-up 0.4s ease-out;
-}
-
-@keyframes banner-slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-.install-banner-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.install-banner-text {
-  flex: 1;
-  min-width: 0;
+/* Store badges */
+.store-badges {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-.install-banner-text strong {
-  font-size: 0.82rem;
-  color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.install-banner-text span {
+.store-badges-label {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.55);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.install-banner-btn {
-  flex-shrink: 0;
-  padding: 0.45rem 1rem;
-  border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, var(--neon-magenta), var(--neon-violet));
-  color: white;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 0 16px rgba(233, 30, 140, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.install-banner-btn:active {
-  transform: scale(0.95);
-}
-
-.install-banner-close {
-  flex-shrink: 0;
-  background: none;
-  border: none;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   color: rgba(255, 255, 255, 0.4);
-  cursor: pointer;
-  padding: 0.25rem;
+}
+
+.store-badges-row {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.install-banner-close:hover {
-  color: rgba(255, 255, 255, 0.8);
+.store-badge {
+  height: 38px;
+  width: auto;
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  transition: opacity 0.3s, filter 0.3s;
+}
+
+.store-badge:hover {
+  opacity: 0.75;
+  filter: grayscale(0);
 }
 
 /* Focus styles */
